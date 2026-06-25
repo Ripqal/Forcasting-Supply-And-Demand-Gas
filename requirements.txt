@@ -1,9 +1,6 @@
-streamlit
-pandas
-numpy
-plotly
-openpyxl
-pyarrow
 fastapi
 uvicorn
 python-multipart
+pandas
+numpy
+openpyxl
