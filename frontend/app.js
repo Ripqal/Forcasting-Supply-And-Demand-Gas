@@ -87,6 +87,66 @@ async function fetchWithFallback(url, mockData) {
 async function loadDashboardData() {
     const regionParam = currentRegion ? `?region=${encodeURIComponent(currentRegion)}` : '';
     
+    // Check localStorage first
+    const stored = localStorage.getItem('dashboardData');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            let srcData = parsed.source_data || [];
+            let predData = parsed.prediction_data || [];
+            
+            if (currentRegion && currentRegion !== "Semua Region") {
+                srcData = srcData.filter(d => d.region === currentRegion);
+                predData = predData.filter(d => d.region === currentRegion);
+            }
+            
+            const aggData = (arr, isPred) => {
+                const map = {};
+                arr.forEach(row => {
+                    if(!map[row.tanggal]) map[row.tanggal] = {
+                        tanggal: row.tanggal,
+                        demand_actual: null, supply_actual: null,
+                        demand_forecast: null, supply_forecast: null,
+                        is_prediction: isPred,
+                        month_type: isPred ? 'prediction' : 'current'
+                    };
+                    if(!isPred) {
+                        map[row.tanggal].demand_actual = (map[row.tanggal].demand_actual || 0) + (row.demand_actual || 0);
+                        map[row.tanggal].supply_actual = (map[row.tanggal].supply_actual || 0) + (row.supply_actual || 0);
+                    } else {
+                        map[row.tanggal].demand_forecast = (map[row.tanggal].demand_forecast || 0) + (row.demand_forecast || 0);
+                        map[row.tanggal].supply_forecast = (map[row.tanggal].supply_forecast || 0) + (row.supply_forecast || 0);
+                    }
+                });
+                return Object.values(map).sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
+            };
+            
+            const aggSrc = aggData(srcData, false);
+            const aggPred = aggData(predData, true);
+            
+            const chartData = [...aggSrc, ...aggPred];
+            renderChart(chartData);
+            
+            const demand_avg = aggPred.length > 0 ? aggPred.reduce((a,b)=>a+b.demand_forecast,0)/aggPred.length : 0;
+            const supply_avg = aggSrc.length > 0 ? aggSrc.reduce((a,b)=>a+b.supply_actual,0)/aggSrc.length : 0;
+            const imbalance = Math.max(demand_avg, supply_avg) > 0 ? Math.abs(demand_avg - supply_avg) / Math.max(demand_avg, supply_avg) * 100 : 0;
+            
+            const kpiData = {
+                demand_today_bbtudh: demand_avg,
+                supply_today_bbtudh: supply_avg,
+                imbalance_rate_pct: imbalance,
+                status: imbalance > 5 ? 'red' : (imbalance > 3 ? 'yellow' : 'green'),
+                region: currentRegion || "Semua Region"
+            };
+            renderKPIs(kpiData);
+            
+            renderAlerts([]); // No mock alerts if real data is uploaded
+            return;
+        } catch (e) {
+            console.error('Error parsing localStorage dashboardData', e);
+        }
+    }
+
     // 1. Fetch KPIs
     const kpiData = await fetchWithFallback(`${API_BASE}/dashboard/kpi${regionParam}`, {
         demand_today_bbtudh: 2150.0,
@@ -495,6 +555,9 @@ async function submitUpload() {
 
         const result = await response.json();
 
+        // Save to localStorage so it persists
+        localStorage.setItem('dashboardData', JSON.stringify(result));
+
         progressBar.style.width = '100%';
         statusMsg.textContent = `Berhasil! Prediksi ${result.prediction_month} telah dibuat.`;
         statusMsg.style.color = 'var(--success)';
@@ -598,6 +661,9 @@ async function processPageUpload(file, area, statusEl, progressEl, msgEl, result
 
         const result = await response.json();
         lastUploadResult = result;
+        
+        // Save to localStorage so it persists
+        localStorage.setItem('dashboardData', JSON.stringify(result));
 
         progressEl.style.width = '100%';
         msgEl.textContent = `Berhasil! ${result.rows_processed} baris diproses → ${result.rows_predicted} baris prediksi dibuat.`;
@@ -836,6 +902,10 @@ function setupManualInput() {
             }
 
             showManualStatus(statusEl, '✅ Data berhasil dikirim dan diprediksi!', 'success');
+            
+            const result = await response.json();
+            localStorage.setItem('dashboardData', JSON.stringify(result));
+            
             loadDashboardData();
 
         } catch (error) {

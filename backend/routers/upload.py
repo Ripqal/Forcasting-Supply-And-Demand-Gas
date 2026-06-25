@@ -126,6 +126,7 @@ async def upload_file(file: UploadFile = File(...)):
             ).to_dict(orient='records'),
             # Daily aggregated predictions (sum all regions per day)
             "daily_predictions": summary.get("daily_predictions", []),
+            "source_data": df.assign(tanggal=df['tanggal'].dt.strftime('%Y-%m-%d')).to_dict(orient='records'),
             "prediction_data": forecaster.get_daily_prediction(prediction_df).to_dict(orient='records'),
         })
 
