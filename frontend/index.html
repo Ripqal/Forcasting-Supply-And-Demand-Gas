@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gas Forecasting Dashboard — Prediksi Supply & Demand Gas</title>
-    <meta name="description" content="Dashboard prediksi supply dan demand gas berbasis ML dengan analisis per Region/SOR dalam satuan BBTUDH">
+    <meta name="description" content="Dashboard prediksi supply dan demand gas berbasis ML dengan analisis per Region/SOR dalam satuan MMSCFD">
     <link rel="stylesheet" href="style.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,7 +42,7 @@
             <div class="sidebar-footer">
                 <div class="unit-badge">
                     <i data-lucide="gauge" style="width:14px;height:14px"></i>
-                    <span>Satuan: BBTUDH</span>
+                    <span>Satuan: MMSCFD</span>
                 </div>
             </div>
         </aside>
@@ -90,7 +90,7 @@
                     <!-- Chart Area -->
                     <section class="chart-section glass-panel">
                         <div class="section-header">
-                            <h3>Prediksi Bulanan — Data Harian & Forecast (BBTUDH)</h3>
+                            <h3>Prediksi Bulanan — Data Harian & Forecast (MMSCFD)</h3>
                             <div class="chart-actions">
                                 <span class="chart-legend-item">
                                     <span class="legend-dot" style="background:#10b981"></span> Aktual
@@ -162,7 +162,7 @@
                             <i data-lucide="gauge" style="width:18px;height:18px;color:var(--warning)"></i>
                             <div>
                                 <strong>Satuan</strong>
-                                <p>BBTUDH (Miliar British Thermal Unit Per Hari)</p>
+                                <p>MMSCFD (Million Standard Cubic Feet per Day)</p>
                             </div>
                         </div>
                     </div>
@@ -212,11 +212,11 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="manual-demand">Demand Actual (BBTUDH)</label>
+                                <label for="manual-demand">Demand Actual (MMSCFD)</label>
                                 <input type="number" id="manual-demand" step="0.01" value="500.00" class="form-input" required>
                             </div>
                             <div class="form-group">
-                                <label for="manual-supply">Supply Actual (BBTUDH)</label>
+                                <label for="manual-supply">Supply Actual (MMSCFD)</label>
                                 <input type="number" id="manual-supply" step="0.01" value="500.00" class="form-input" required>
                             </div>
                         </div>
@@ -243,7 +243,7 @@
             <div class="modal-body">
                 <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
                     Upload data harian 1 bulan → Sistem akan memprediksi bulan berikutnya.<br>
-                    Satuan: <strong>BBTUDH</strong> (Miliar British Thermal Unit Per Hari)
+                    Satuan: <strong>MMSCFD</strong> (Million Standard Cubic Feet per Day)
                 </p>
                 <div class="upload-area" id="uploadArea">
                     <i data-lucide="file-up" class="upload-icon"></i>

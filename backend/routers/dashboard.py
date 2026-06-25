@@ -13,7 +13,7 @@ REGIONS = [
     "SOR 5 - Kalimantan",
 ]
 
-# Base values per region (BBTUDH)
+# Base values per region (MMSCFD)
 REGION_BASES = {
     "SOR 1 - Sumatera Bagian Utara":  {"demand": 320, "supply": 340},
     "SOR 2 - Sumatera Bagian Selatan": {"demand": 280, "supply": 295},
@@ -32,7 +32,7 @@ def get_regions():
 @router.get("/kpi")
 def get_kpi(region: str = None):
     """
-    Mock API for KPI Cards — values in BBTUDH.
+    Mock API for KPI Cards — values in MMSCFD.
     Optional: filter by region.
     """
     if region and region in REGION_BASES:
@@ -55,8 +55,8 @@ def get_kpi(region: str = None):
         status = "yellow"
 
     return {
-        "demand_today_bbtudh": demand,
-        "supply_today_bbtudh": supply,
+        "demand_today_mmscfd": demand,
+        "supply_today_mmscfd": supply,
         "imbalance_rate_pct": imbalance,
         "status": status,
         "region": region or "Semua Region"
@@ -68,7 +68,7 @@ def get_monthly_chart(region: str = None):
     """
     Mock API for Monthly Chart — shows daily data for current month 
     and prediction for next month.
-    Values in BBTUDH.
+    Values in MMSCFD.
     """
     data = []
     now = datetime.now()

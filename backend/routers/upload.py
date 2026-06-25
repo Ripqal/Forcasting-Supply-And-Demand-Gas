@@ -48,7 +48,7 @@ async def upload_file(file: UploadFile = File(...)):
     """
     Upload daily data for one month → get predictions for the next month.
     Required columns: tanggal, region, demand_actual, supply_actual
-    Unit: BBTUDH (Miliar British Thermal Unit Per Hari)
+    Unit: MMSCFD (Million Standard Cubic Feet per Day)
     """
     if not file.filename.endswith(('.csv', '.xlsx', '.parquet')):
         raise HTTPException(

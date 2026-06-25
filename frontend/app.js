@@ -132,8 +132,8 @@ async function loadDashboardData() {
             const imbalance = Math.max(demand_avg, supply_avg) > 0 ? Math.abs(demand_avg - supply_avg) / Math.max(demand_avg, supply_avg) * 100 : 0;
             
             const kpiData = {
-                demand_today_bbtudh: demand_avg,
-                supply_today_bbtudh: supply_avg,
+                demand_today_mmscfd: demand_avg,
+                supply_today_mmscfd: supply_avg,
                 imbalance_rate_pct: imbalance,
                 status: imbalance > 5 ? 'red' : (imbalance > 3 ? 'yellow' : 'green'),
                 region: currentRegion || "Semua Region"
@@ -149,8 +149,8 @@ async function loadDashboardData() {
 
     // 1. Fetch KPIs
     const kpiData = await fetchWithFallback(`${API_BASE}/dashboard/kpi${regionParam}`, {
-        demand_today_bbtudh: 2150.0,
-        supply_today_bbtudh: 2175.0,
+        demand_today_mmscfd: 2150.0,
+        supply_today_mmscfd: 2175.0,
         imbalance_rate_pct: 1.16,
         status: 'green',
         region: currentRegion || 'Semua Region'
@@ -188,16 +188,16 @@ function renderKPIs(data) {
     const kpis = [
         {
             title: `Prediksi Demand — ${data.region || 'Semua Region'}`,
-            value: `${formatNumber(data.demand_today_bbtudh)}`,
-            unit: 'BBTUDH',
+            value: `${formatNumber(data.demand_today_mmscfd)}`,
+            unit: 'MMSCFD',
             trend: '+1.2%',
             trendClass: 'trend-up',
             icon: 'trending-up'
         },
         {
             title: `Realisasi Supply — ${data.region || 'Semua Region'}`,
-            value: `${formatNumber(data.supply_today_bbtudh)}`,
-            unit: 'BBTUDH',
+            value: `${formatNumber(data.supply_today_mmscfd)}`,
+            unit: 'MMSCFD',
             trend: '-0.5%',
             trendClass: 'trend-warning',
             icon: 'trending-down'
@@ -361,7 +361,7 @@ function renderChart(data) {
                         label: function(context) {
                             let val = context.parsed.y;
                             if (val === null || val === undefined) return null;
-                            return `${context.dataset.label}: ${formatNumber(val)} BBTUDH`;
+                            return `${context.dataset.label}: ${formatNumber(val)} MMSCFD`;
                         }
                     }
                 },
@@ -383,7 +383,7 @@ function renderChart(data) {
                 y: {
                     grid: { color: 'rgba(255,255,255,0.05)' },
                     ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'Volume (BBTUDH)', color: '#94a3b8', font: { size: 12 } }
+                    title: { display: true, text: 'Volume (MMSCFD)', color: '#94a3b8', font: { size: 12 } }
                 },
                 x: {
                     grid: { display: false },
@@ -765,15 +765,15 @@ function renderUploadResult(container, result) {
             <!-- Daily Prediction Table -->
             <h4 style="margin-top:1.5rem;">📋 Prediksi Harian — ${summary.prediction_month}</h4>
             <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.75rem;">
-                Total semua region per hari (BBTUDH)
+                Total semua region per hari (MMSCFD)
             </p>
             <table class="upload-result-table">
                 <thead>
                     <tr>
                         <th>No</th>
                         <th>Tanggal</th>
-                        <th>Demand Forecast (BBTUDH)</th>
-                        <th>Supply Forecast (BBTUDH)</th>
+                        <th>Demand Forecast (MMSCFD)</th>
+                        <th>Supply Forecast (MMSCFD)</th>
                     </tr>
                 </thead>
                 <tbody>
