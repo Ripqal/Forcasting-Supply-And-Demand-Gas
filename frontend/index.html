@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Forecasting Dashboard — Prediksi Supply & Demand Gas</title>
+    <meta name="description" content="Dashboard prediksi supply dan demand gas berbasis ML dengan analisis per Region/SOR dalam satuan BBTUDH">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i data-lucide="flame" class="icon-primary"></i>
+                <h2>GasForecast</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-target="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Operational Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-target="strategic">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Strategic Planning</span>
+                </a>
+                <a href="#" class="nav-item" data-target="upload-page">
+                    <i data-lucide="cloud-upload"></i>
+                    <span>Data Upload</span>
+                </a>
+                <a href="#" class="nav-item" data-target="manual">
+                    <i data-lucide="edit-3"></i>
+                    <span>Manual Input</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="unit-badge">
+                    <i data-lucide="gauge" style="width:14px;height:14px"></i>
+                    <span>Satuan: BBTUDH</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ==================== DASHBOARD VIEW ==================== -->
+            <div id="dashboard-view" class="view-section">
+                <header class="header">
+                    <div>
+                        <h1 class="page-title">Operational Dashboard</h1>
+                        <p class="page-subtitle">Monitoring supply & demand gas per Region/SOR</p>
+                    </div>
+                    <div class="header-actions">
+                        <!-- Region Filter -->
+                        <div class="region-filter-wrapper">
+                            <i data-lucide="map-pin" style="width:16px;height:16px;color:var(--text-muted)"></i>
+                            <select id="region-filter" class="region-filter">
+                                <option value="">Semua Region</option>
+                                <option value="SOR 1 - Sumatera Bagian Utara">SOR 1 - Sumatera Bagian Utara</option>
+                                <option value="SOR 2 - Sumatera Bagian Selatan">SOR 2 - Sumatera Bagian Selatan</option>
+                                <option value="SOR 3 - Jawa Bagian Barat">SOR 3 - Jawa Bagian Barat</option>
+                                <option value="SOR 4 - Jawa Bagian Timur">SOR 4 - Jawa Bagian Timur</option>
+                                <option value="SOR 5 - Kalimantan">SOR 5 - Kalimantan</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="openUploadModal()">
+                            <i data-lucide="upload"></i> Upload Data
+                        </button>
+                        <div class="user-profile">
+                            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User">
+                        </div>
+                    </div>
+                </header>
+
+                <!-- KPI Cards -->
+                <section class="kpi-grid" id="kpi-container">
+                    <div class="kpi-card skeleton"></div>
+                    <div class="kpi-card skeleton"></div>
+                    <div class="kpi-card skeleton"></div>
+                </section>
+
+                <div class="content-grid">
+                    <!-- Chart Area -->
+                    <section class="chart-section glass-panel">
+                        <div class="section-header">
+                            <h3>Prediksi Bulanan — Data Harian & Forecast (BBTUDH)</h3>
+                            <div class="chart-actions">
+                                <span class="chart-legend-item">
+                                    <span class="legend-dot" style="background:#10b981"></span> Aktual
+                                </span>
+                                <span class="chart-legend-item">
+                                    <span class="legend-dot" style="background:#3b82f6"></span> Prediksi
+                                </span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Alerts Area -->
+                    <section class="alerts-section glass-panel">
+                        <div class="section-header">
+                            <h3>Active Alerts</h3>
+                            <span class="badge" id="alert-badge">0</span>
+                        </div>
+                        <div class="alert-list" id="alert-list">
+                            <!-- Injected via JS -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- ==================== STRATEGIC VIEW ==================== -->
+            <div id="strategic-view" class="view-section hidden">
+                <header class="header">
+                    <div>
+                        <h1 class="page-title">Strategic Planning</h1>
+                        <p class="page-subtitle">Long-term forecasting & scenario analysis</p>
+                    </div>
+                </header>
+                <div class="glass-panel" style="padding: 3rem; text-align:center;">
+                    <i data-lucide="bar-chart-3" style="width:48px; height:48px; color:var(--primary); margin-bottom:1rem;"></i>
+                    <h3 style="margin-bottom:0.5rem;">Strategic Planning — Phase 2</h3>
+                    <p style="color:var(--text-muted);">Modul ini akan dikembangkan pada tahap selanjutnya dengan fitur scenario planning dan forecast jangka panjang.</p>
+                </div>
+            </div>
+
+            <!-- ==================== UPLOAD PAGE VIEW ==================== -->
+            <div id="upload-page-view" class="view-section hidden">
+                <header class="header">
+                    <div>
+                        <h1 class="page-title">Data Upload</h1>
+                        <p class="page-subtitle">Upload data harian bulan lalu → Prediksi bulan berikutnya</p>
+                    </div>
+                </header>
+                <div class="glass-panel upload-page-panel">
+                    <!-- Upload Info Banner -->
+                    <div class="upload-info-banner">
+                        <div class="info-item">
+                            <i data-lucide="calendar" style="width:18px;height:18px;color:var(--primary)"></i>
+                            <div>
+                                <strong>Format Data</strong>
+                                <p>Data harian selama 1 bulan (misal: Mei 2026)</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i data-lucide="target" style="width:18px;height:18px;color:var(--success)"></i>
+                            <div>
+                                <strong>Hasil Prediksi</strong>
+                                <p>Prediksi harian untuk bulan berikutnya (misal: Juni 2026)</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i data-lucide="gauge" style="width:18px;height:18px;color:var(--warning)"></i>
+                            <div>
+                                <strong>Satuan</strong>
+                                <p>BBTUDH (Miliar British Thermal Unit Per Hari)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="upload-area" id="uploadAreaPage">
+                        <i data-lucide="file-up" class="upload-icon"></i>
+                        <p>Drag & drop file Anda di sini atau <span class="text-primary">browse</span></p>
+                        <p class="upload-hint">Mendukung CSV, XLSX, Parquet (Maks 100MB)</p>
+                        <p class="upload-hint">Kolom wajib: <strong>tanggal</strong>, <strong>region</strong>, <strong>demand_actual</strong>, <strong>supply_actual</strong></p>
+                        <input type="file" id="fileInputPage" accept=".csv, .xlsx, .parquet" hidden>
+                    </div>
+                    <div id="uploadStatusPage" class="upload-status hidden">
+                        <div class="progress-bar"><div class="progress" id="uploadProgressPage"></div></div>
+                        <p id="uploadMessagePage">Memproses...</p>
+                    </div>
+                    <div id="uploadResultPage" class="hidden" style="margin-top:1.5rem;">
+                        <div id="uploadResultContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== MANUAL INPUT VIEW ==================== -->
+            <div id="manual-view" class="view-section hidden">
+                <header class="header">
+                    <div>
+                        <h1 class="page-title">Manual Input</h1>
+                        <p class="page-subtitle">Masukkan data operasional secara manual</p>
+                    </div>
+                </header>
+                <div class="glass-panel manual-form-panel">
+                    <h3 style="margin-bottom:1.5rem;">Tambah Data Baru</h3>
+                    <form id="manual-form">
+                        <div class="form-grid-4">
+                            <div class="form-group">
+                                <label for="manual-ts">Tanggal</label>
+                                <input type="date" id="manual-ts" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="manual-region">Region / SOR</label>
+                                <select id="manual-region" class="form-input" required>
+                                    <option value="">Pilih Region</option>
+                                    <option value="SOR 1 - Sumatera Bagian Utara">SOR 1 - Sumatera Bagian Utara</option>
+                                    <option value="SOR 2 - Sumatera Bagian Selatan">SOR 2 - Sumatera Bagian Selatan</option>
+                                    <option value="SOR 3 - Jawa Bagian Barat">SOR 3 - Jawa Bagian Barat</option>
+                                    <option value="SOR 4 - Jawa Bagian Timur">SOR 4 - Jawa Bagian Timur</option>
+                                    <option value="SOR 5 - Kalimantan">SOR 5 - Kalimantan</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="manual-demand">Demand Actual (BBTUDH)</label>
+                                <input type="number" id="manual-demand" step="0.01" value="500.00" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="manual-supply">Supply Actual (BBTUDH)</label>
+                                <input type="number" id="manual-supply" step="0.01" value="500.00" class="form-input" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top:1.5rem;">
+                            <i data-lucide="send"></i> Submit Data
+                        </button>
+                    </form>
+                    <div id="manual-status" class="manual-status hidden"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Upload Modal (for the quick-upload button on dashboard) -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Upload Dataset Bulanan</h2>
+                <button class="btn-close" onclick="closeUploadModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">
+                    Upload data harian 1 bulan → Sistem akan memprediksi bulan berikutnya.<br>
+                    Satuan: <strong>BBTUDH</strong> (Miliar British Thermal Unit Per Hari)
+                </p>
+                <div class="upload-area" id="uploadArea">
+                    <i data-lucide="file-up" class="upload-icon"></i>
+                    <p>Drag & drop file Anda di sini atau <span class="text-primary">browse</span></p>
+                    <p class="upload-hint">Mendukung CSV, XLSX, Parquet (Maks 100MB)</p>
+                    <p class="upload-hint">Kolom: <strong>tanggal</strong>, <strong>region</strong>, <strong>demand_actual</strong>, <strong>supply_actual</strong></p>
+                    <input type="file" id="fileInput" accept=".csv, .xlsx, .parquet" hidden>
+                </div>
+                <div id="uploadStatus" class="upload-status hidden">
+                    <div class="progress-bar"><div class="progress" id="uploadProgress"></div></div>
+                    <p id="uploadMessage">Mengunggah...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeUploadModal()">Batal</button>
+                <button class="btn btn-primary" onclick="submitUpload()" id="btnSubmitUpload" disabled>Proses File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
