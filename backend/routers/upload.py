@@ -79,11 +79,15 @@ async def upload_file(file: UploadFile = File(...)):
             )
 
         # Validate data types
-        df['tanggal'] = pd.to_datetime(df['tanggal'])
+        df['tanggal'] = pd.to_datetime(df['tanggal'], errors='coerce', dayfirst=True)
         df['demand_actual'] = pd.to_numeric(df['demand_actual'], errors='coerce')
         df['supply_actual'] = pd.to_numeric(df['supply_actual'], errors='coerce')
 
         # Check for NaN values after conversion
+        nan_dates = df['tanggal'].isna().sum()
+        if nan_dates > 0:
+            raise HTTPException(status_code=400, detail=f"Data tidak valid: {nan_dates} baris memiliki format tanggal yang tidak dikenali.")
+
         nan_demand = df['demand_actual'].isna().sum()
         nan_supply = df['supply_actual'].isna().sum()
         if nan_demand > 0 or nan_supply > 0:
@@ -127,7 +131,7 @@ async def upload_file(file: UploadFile = File(...)):
             # Daily aggregated predictions (sum all regions per day)
             "daily_predictions": summary.get("daily_predictions", []),
             "source_data": df.assign(tanggal=df['tanggal'].dt.strftime('%Y-%m-%d')).to_dict(orient='records'),
-            "prediction_data": forecaster.get_daily_prediction(prediction_df).to_dict(orient='records'),
+            "prediction_data": prediction_df.assign(tanggal=prediction_df['tanggal'].dt.strftime('%Y-%m-%d')).to_dict(orient='records'),
         })
 
         return JSONResponse(content=response_data)

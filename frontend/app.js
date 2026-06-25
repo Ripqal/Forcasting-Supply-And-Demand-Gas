@@ -121,26 +121,90 @@ async function loadDashboardData() {
                 return Object.values(map).sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
             };
             
+            // Dynamically populate region dropdown to match actual data
+            const regionSelect = document.getElementById('region-filter');
+            if (regionSelect && parsed.regions && JSON.stringify(window.lastLoadedRegions) !== JSON.stringify(parsed.regions)) {
+                window.lastLoadedRegions = parsed.regions;
+                regionSelect.innerHTML = '<option value="">Semua Region</option>';
+                parsed.regions.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = r;
+                    regionSelect.appendChild(opt);
+                });
+                if (parsed.regions.includes(currentRegion)) {
+                    regionSelect.value = currentRegion;
+                } else {
+                    currentRegion = '';
+                    regionSelect.value = '';
+                }
+            }
+            
             const aggSrc = aggData(srcData, false);
             const aggPred = aggData(predData, true);
             
-            const chartData = [...aggSrc, ...aggPred];
+            // Connecting actual and predicted lines for the chart
+            if (aggSrc.length > 0 && aggPred.length > 0) {
+                const lastActual = aggSrc[aggSrc.length - 1];
+                const bridgePoint = {
+                    tanggal: lastActual.tanggal,
+                    demand_actual: null, supply_actual: null,
+                    demand_forecast: lastActual.demand_actual, 
+                    supply_forecast: lastActual.supply_actual,
+                    is_prediction: true,
+                    month_type: 'prediction'
+                };
+                aggPred.unshift(bridgePoint);
+            }
+            
+            // Slicing chartData to show "Realisasi Bulan Ini" (last 30 days) and "Prediksi Bulan Depan" (first 31 days)
+            const recentSrc = aggSrc.slice(-30);
+            const nearPred = aggPred.slice(0, 31);
+            const chartData = [...recentSrc, ...nearPred];
             renderChart(chartData);
             
-            const demand_avg = aggPred.length > 0 ? aggPred.reduce((a,b)=>a+b.demand_forecast,0)/aggPred.length : 0;
-            const supply_avg = aggSrc.length > 0 ? aggSrc.reduce((a,b)=>a+b.supply_actual,0)/aggSrc.length : 0;
-            const imbalance = Math.max(demand_avg, supply_avg) > 0 ? Math.abs(demand_avg - supply_avg) / Math.max(demand_avg, supply_avg) * 100 : 0;
+            const pred_demand_avg = aggPred.length > 0 ? aggPred.reduce((a,b)=>a+b.demand_forecast,0)/aggPred.length : 0;
+            const pred_supply_avg = aggPred.length > 0 ? aggPred.reduce((a,b)=>a+b.supply_forecast,0)/aggPred.length : 0;
+            const actual_demand_avg = aggSrc.length > 0 ? aggSrc.reduce((a,b)=>a+b.demand_actual,0)/aggSrc.length : 0;
+            const actual_supply_avg = aggSrc.length > 0 ? aggSrc.reduce((a,b)=>a+b.supply_actual,0)/aggSrc.length : 0;
+            
+            const imbalance = Math.max(pred_demand_avg, pred_supply_avg) > 0 ? Math.abs(pred_demand_avg - pred_supply_avg) / Math.max(pred_demand_avg, pred_supply_avg) * 100 : 0;
             
             const kpiData = {
-                demand_today_mmscfd: demand_avg,
-                supply_today_mmscfd: supply_avg,
+                actual_demand_mmscfd: actual_demand_avg,
+                actual_supply_mmscfd: actual_supply_avg,
+                pred_demand_mmscfd: pred_demand_avg,
+                pred_supply_mmscfd: pred_supply_avg,
                 imbalance_rate_pct: imbalance,
                 status: imbalance > 5 ? 'red' : (imbalance > 3 ? 'yellow' : 'green'),
                 region: currentRegion || "Semua Region"
             };
             renderKPIs(kpiData);
             
-            renderAlerts([]); // No mock alerts if real data is uploaded
+            // Dynamic Alerts Generation
+            const dynamicAlerts = [];
+            if (pred_demand_avg > pred_supply_avg * 0.95) {
+                dynamicAlerts.push({
+                    id: 1, type: "Under-Supply Risk", severity: "Critical", 
+                    message: `Prediksi demand (${formatNumber(pred_demand_avg)} MMSCFD) mendekati atau melebihi prediksi supply (${formatNumber(pred_supply_avg)} MMSCFD).`, 
+                    timestamp: new Date().toISOString()
+                });
+            }
+            if (Math.abs(actual_demand_avg - actual_supply_avg) / Math.max(actual_demand_avg, actual_supply_avg) > 0.05) {
+                dynamicAlerts.push({
+                    id: 2, type: "High Historical Imbalance", severity: "Warning", 
+                    message: "Terdapat selisih >5% antara Realisasi Supply dan Demand historis.", 
+                    timestamp: new Date(Date.now() - 3600000).toISOString()
+                });
+            }
+            if (dynamicAlerts.length === 0) {
+                dynamicAlerts.push({
+                    id: 3, type: "Status Normal", severity: "Info", 
+                    message: "Pasokan gas diprediksi aman untuk bulan depan berdasarkan tren.", 
+                    timestamp: new Date().toISOString()
+                });
+            }
+            renderAlerts(dynamicAlerts);
             return;
         } catch (e) {
             console.error('Error parsing localStorage dashboardData', e);
@@ -149,8 +213,10 @@ async function loadDashboardData() {
 
     // 1. Fetch KPIs
     const kpiData = await fetchWithFallback(`${API_BASE}/dashboard/kpi${regionParam}`, {
-        demand_today_mmscfd: 2150.0,
-        supply_today_mmscfd: 2175.0,
+        actual_demand_mmscfd: 2120.0,
+        actual_supply_mmscfd: 2150.0,
+        pred_demand_mmscfd: 2150.0,
+        pred_supply_mmscfd: 2175.0,
         imbalance_rate_pct: 1.16,
         status: 'green',
         region: currentRegion || 'Semua Region'
@@ -187,24 +253,40 @@ function renderKPIs(data) {
 
     const kpis = [
         {
-            title: `Prediksi Demand — ${data.region || 'Semua Region'}`,
-            value: `${formatNumber(data.demand_today_mmscfd)}`,
+            title: `Realisasi Demand — ${data.region || 'Semua Region'}`,
+            value: `${formatNumber(data.actual_demand_mmscfd)}`,
             unit: 'MMSCFD',
-            trend: '+1.2%',
+            trend: 'Historis',
+            trendClass: 'trend-up',
+            icon: 'bar-chart-2'
+        },
+        {
+            title: `Prediksi Demand — ${data.region || 'Semua Region'}`,
+            value: `${formatNumber(data.pred_demand_mmscfd)}`,
+            unit: 'MMSCFD',
+            trend: 'Bulan Depan',
             trendClass: 'trend-up',
             icon: 'trending-up'
         },
         {
             title: `Realisasi Supply — ${data.region || 'Semua Region'}`,
-            value: `${formatNumber(data.supply_today_mmscfd)}`,
+            value: `${formatNumber(data.actual_supply_mmscfd)}`,
             unit: 'MMSCFD',
-            trend: '-0.5%',
-            trendClass: 'trend-warning',
-            icon: 'trending-down'
+            trend: 'Historis',
+            trendClass: 'trend-up',
+            icon: 'bar-chart-2'
         },
         {
-            title: 'Imbalance Rate',
-            value: `${data.imbalance_rate_pct}%`,
+            title: `Prediksi Supply — ${data.region || 'Semua Region'}`,
+            value: `${formatNumber(data.pred_supply_mmscfd)}`,
+            unit: 'MMSCFD',
+            trend: 'Bulan Depan',
+            trendClass: 'trend-up',
+            icon: 'trending-up'
+        },
+        {
+            title: 'Imbalance Rate (Prediksi)',
+            value: `${formatNumber(data.imbalance_rate_pct)}%`,
             unit: '',
             trend: data.status === 'green' ? 'Normal' : (data.status === 'yellow' ? 'Waspada' : 'Kritis'),
             trendClass: data.status === 'green' ? 'trend-up' : (data.status === 'yellow' ? 'trend-warning' : 'trend-down'),
@@ -222,8 +304,8 @@ function renderKPIs(data) {
             </div>
             <div class="kpi-value">${kpi.value} <span class="kpi-unit">${kpi.unit}</span></div>
             <div class="kpi-trend ${kpi.trendClass}">
-                <i data-lucide="${kpi.icon === 'trending-down' ? 'arrow-down-right' : 'arrow-up-right'}" style="width:14px; height:14px"></i>
-                ${kpi.trend} vs Bulan Lalu
+                <i data-lucide="${kpi.icon === 'trending-down' ? 'arrow-down-right' : (kpi.icon === 'trending-up' ? 'arrow-up-right' : 'clock')}" style="width:14px; height:14px"></i>
+                ${kpi.trend}
             </div>
         `;
         container.appendChild(card);
